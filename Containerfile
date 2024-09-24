@@ -1,4 +1,4 @@
-FROM quay.io/toolbx-images/alpine-toolbox:edge
+FROM docker.io/library/archlinux:latest
 
 LABEL com.github.containers.toolbox="true" \
       usage="This image is meant to be used with the toolbox or distrobox command" \
@@ -6,9 +6,15 @@ LABEL com.github.containers.toolbox="true" \
       maintainer="jorge.castro@gmail.com"
 
 COPY extra-packages /
-RUN apk update && \
-    apk upgrade && \
-    grep -v '^#' /extra-packages | xargs apk add
+RUN pacman -Sy &&\
+    pacman -Syu --needed --noconfirm base-devel go git
+RUN git clone https://aur.archlinux.org/yay &&\ 
+    mkdir /.cache &&\
+    cd /yay &&\
+    chown nobody:nobody {'/.cache','/yay'} -R &&\
+    sudo -u nobody makepkg -p /yay/PKGBUILD &&\
+    sudo pacman -U yay-[0-9][0-9]*x86_64.pkg.tar.zst --noconfirm
+RUN grep -v '^#' /extra-packages | xargs yay -Syu --answerclean y --answerdiff n --answeredit y --answerupgrade y --removemake --noconfirm 
 RUN rm /extra-packages
 
 RUN   ln -fs /bin/sh /usr/bin/sh && \
